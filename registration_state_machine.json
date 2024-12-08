@@ -1,0 +1,107 @@
+{
+    "Comment": "A description of my state machine",
+    "StartAt": "Validate User Input",
+    "States": {
+      "Validate User Input": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::lambda:invoke",
+        "Output": "{% $states.result.Payload %}",
+        "Arguments": {
+          "FunctionName": "arn:aws:lambda:eu-north-1:645534461516:function:validate_user_input:$LATEST",
+          "Payload": "{% $states.input %}"
+        },
+        "Retry": [
+          {
+            "ErrorEquals": [
+              "Lambda.ServiceException",
+              "Lambda.AWSLambdaException",
+              "Lambda.SdkClientException",
+              "Lambda.TooManyRequestsException"
+            ],
+            "IntervalSeconds": 1,
+            "MaxAttempts": 3,
+            "BackoffRate": 2,
+            "JitterStrategy": "FULL"
+          }
+        ],
+        "Next": "Input Valid?"
+      },
+      "Input Valid?": {
+        "Type": "Choice",
+        "Choices": [
+          {
+            "Next": "Invalid User Input",
+            "Condition": "{% $states.input.statusCode = 400 %}"
+          }
+        ],
+        "Default": "Check Existing User"
+      },
+      "Invalid User Input": {
+        "Type": "Pass",
+        "End": true
+      },
+      "Check Existing User": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::lambda:invoke",
+        "Output": "{% $states.result.Payload %}",
+        "Arguments": {
+          "FunctionName": "arn:aws:lambda:eu-north-1:645534461516:function:check_existing_user:$LATEST",
+          "Payload": "{% $states.input %}"
+        },
+        "Retry": [
+          {
+            "ErrorEquals": [
+              "Lambda.ServiceException",
+              "Lambda.AWSLambdaException",
+              "Lambda.SdkClientException",
+              "Lambda.TooManyRequestsException"
+            ],
+            "IntervalSeconds": 1,
+            "MaxAttempts": 3,
+            "BackoffRate": 2,
+            "JitterStrategy": "FULL"
+          }
+        ],
+        "Next": "User Exists?"
+      },
+      "User Exists?": {
+        "Type": "Choice",
+        "Choices": [
+          {
+            "Next": "User Already Exists",
+            "Condition": "{% $states.input.statusCode = 400 %}"
+          }
+        ],
+        "Default": "Create User Record"
+      },
+      "User Already Exists": {
+        "Type": "Pass",
+        "End": true
+      },
+      "Create User Record": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::lambda:invoke",
+        "Output": "{% $states.result.Payload %}",
+        "Arguments": {
+          "FunctionName": "arn:aws:lambda:eu-north-1:645534461516:function:create_user_record:$LATEST",
+          "Payload": "{% $states.input %}"
+        },
+        "Retry": [
+          {
+            "ErrorEquals": [
+              "Lambda.ServiceException",
+              "Lambda.AWSLambdaException",
+              "Lambda.SdkClientException",
+              "Lambda.TooManyRequestsException"
+            ],
+            "IntervalSeconds": 1,
+            "MaxAttempts": 3,
+            "BackoffRate": 2,
+            "JitterStrategy": "FULL"
+          }
+        ],
+        "End": true
+      }
+    },
+    "QueryLanguage": "JSONata"
+  }
